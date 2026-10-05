@@ -1,0 +1,78 @@
+// Prisma schema for the chatbot platform.
+// Every business table below carries a tenantId — that's the rule that
+// keeps one tenant's data from ever leaking into another's queries.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+
+  users User[]
+  bots  Bot[]
+}
+
+model User {
+  id           String   @id @default(uuid())
+  tenantId     String
+  email        String
+  passwordHash String
+  role         String   @default("owner") // owner | admin | member
+  createdAt    DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, email])
+  @@index([tenantId])
+}
+
+model Bot {
+  id           String   @id @default(uuid())
+  tenantId     String
+  name         String
+  systemPrompt String   @default("You are a helpful assistant.")
+  model        String   @default("claude-sonnet-4-6")
+  apiKey       String   @unique @default(uuid()) // used by the public widget/API
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  tenant        Tenant         @relation(fields: [tenantId], references: [id])
+  conversations Conversation[]
+
+  @@index([tenantId])
+}
+
+model Conversation {
+  id         String   @id @default(uuid())
+  tenantId   String
+  botId      String
+  externalId String? // e.g. an end-user/session id from the widget
+  createdAt  DateTime @default(now())
+
+  bot      Bot       @relation(fields: [botId], references: [id])
+  messages Message[]
+
+  @@index([tenantId])
+  @@index([botId])
+}
+
+model Message {
+  id             String   @id @default(uuid())
+  conversationId String
+  role           String // user | assistant
+  content        String
+  createdAt      DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id])
+
+  @@index([conversationId])
+}
