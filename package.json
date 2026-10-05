@@ -2,6 +2,7 @@
   "name": "chatbot-platform",
   "version": "0.1.0",
   "description": "Multi-tenant chatbot platform — Week 1 foundation scaffold",
+  "author": "Keerthana Priya",
   "type": "module",
   "main": "src/server.js",
   "scripts": {
